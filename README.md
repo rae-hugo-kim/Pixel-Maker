@@ -1,45 +1,108 @@
-# claude — Claude Code Policy Template Repository
+# PixelMaker
 
-A template repository providing `CLAUDE.md` and a structured policy framework for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) projects. Built for use with [oh-my-claudecode](https://github.com/anthropics/oh-my-claudecode).
+Extract pure pixel art from grid-overlay images. Detects grid lines automatically, samples the center color of each cell, and outputs a clean NxN pixel art image.
 
-## Quick Start
+**Not** a style converter — this tool extracts pixel art that already exists inside a high-resolution grid image.
+
+## Install
 
 ```bash
-# Clone into your project
-git clone https://github.com/rae-hugo-kim/claude.git
-
-# Or use as a GitHub template
-# Click "Use this template" on the repository page
+pip install git+https://github.com/rae-hugo-kim/Pixel-Maker.git
 ```
 
-## Structure
+Or clone and install locally:
 
-```
-.
-├── CLAUDE.md            # Main agent policy (entry point)
-├── INDEX.md             # Repository navigation index
-├── EXAMPLES.md          # Principle examples with good/bad patterns
-├── rules/               # Rule definitions for agent behavior
-├── checklists/          # Task & review checklists
-├── templates/           # Reusable project templates
-├── claudedocs/          # Supporting docs (Korean translation, bootstrap guide, agreements)
-└── .omc/                # oh-my-claudecode configuration
+```bash
+git clone https://github.com/rae-hugo-kim/Pixel-Maker.git
+cd Pixel-Maker
+pip install .
 ```
 
-## How to Deploy
+## CLI Usage
 
-1. **As a template**: Click "Use this template" on GitHub to create a new repo based on this structure.
-2. **Copy into existing project**: Copy `CLAUDE.md` and the directories you need into your project root.
-3. **Customize**: Edit `CLAUDE.md`, rules, checklists, and templates to fit your project's needs.
+```bash
+# Basic — auto-detect grid
+pixelmaker extract input.png output.png
 
-Claude Code will automatically read `CLAUDE.md` from the project root when you start a session.
+# Provide grid size hint
+pixelmaker extract input.png output.png --grid-size 64
 
-## Core Principles
+# Infer grid size from a reference image
+pixelmaker extract input.png output.png --ref reference_64x64.png
 
-- **Think Before Coding** — State assumptions explicitly, ask before deciding
-- **Simplicity First** — Implement only what's requested, avoid over-engineering
-- **Surgical Changes** — Edit only relevant lines, match existing style
-- **Goal-Driven Execution** — Transform vague requests into verifiable objectives
+# Force grid size (skip auto-detection)
+pixelmaker extract input.png output.png --force-grid-size 32
+
+# Scale up the output (nearest-neighbor)
+pixelmaker extract input.png output.png --scale 4
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--grid-size N` | Hint for expected grid size. Raises error if auto-detection disagrees. |
+| `--ref PATH` | Reference image to infer grid size from its dimensions. |
+| `--force-grid-size N` | Force grid size, bypassing auto-detection entirely. |
+| `--scale N` | Scale up the output image by N using nearest-neighbor interpolation. |
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | Error (grid not detected, hint conflict, file not found, etc.) |
+
+## MCP Server (for AI Agents)
+
+Register PixelMaker as an MCP tool so Claude can call it from any project:
+
+```bash
+# Install with MCP dependencies
+pip install "pixelmaker[mcp] @ git+https://github.com/rae-hugo-kim/Pixel-Maker.git"
+
+# Register with Claude Code
+claude mcp add --scope user pixelmaker -- python -m pixelmaker.mcp_server
+```
+
+Once registered, ask Claude:
+
+> "Extract pixel art from this image" (provide the file path)
+
+Claude will call the `extract_pixel_art` tool and return metadata including confidence, grid size, and unique color count.
+
+## How It Works
+
+1. **Grid Detection** — Scans rows/columns for dark lines (absolute threshold + relative valley detection for gray lines)
+2. **Cell Sampling** — Computes cell boundaries from grid lines, samples 7x7 center average for JPEG tolerance
+3. **Output** — Produces a clean NxN pixel art image with exact original colors
+
+## Supported Formats
+
+| Format | Input | Output |
+|--------|-------|--------|
+| PNG | Yes | Yes |
+| JPEG | Yes | — |
+| BMP | Yes | — |
+| WebP | Yes | — |
+| RGBA (transparent) | Yes | — |
+| Grayscale | Yes | — |
+
+## Requirements
+
+- Python 3.10+
+- Pillow 10.0+
+
+## Development
+
+```bash
+git clone https://github.com/rae-hugo-kim/Pixel-Maker.git
+cd Pixel-Maker
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev,mcp]"
+python -m pytest  # 50 tests
+```
 
 ## License
 
@@ -47,45 +110,112 @@ See repository for license details.
 
 ---
 
-# claude — Claude Code 정책 템플릿 저장소
+# PixelMaker (한국어)
 
-[Claude Code](https://docs.anthropic.com/en/docs/claude-code) 프로젝트를 위한 `CLAUDE.md` 및 구조화된 정책 프레임워크 템플릿입니다. [oh-my-claudecode](https://github.com/anthropics/oh-my-claudecode) 환경에서 사용할 수 있습니다.
+격자선이 포함된 고해상도 이미지에서 순수 픽셀아트를 추출하는 도구입니다. 격자를 자동 감지하고, 각 셀의 중심 색상을 샘플링하여 깨끗한 NxN 픽셀아트 이미지를 출력합니다.
 
-## 빠른 시작
+스타일 변환 도구가 **아닙니다** — 고해상도 격자 이미지 안에 이미 존재하는 픽셀아트를 꺼내는 도구입니다.
+
+## 설치
 
 ```bash
-# 프로젝트에 클론
-git clone https://github.com/rae-hugo-kim/claude.git
-
-# 또는 GitHub 템플릿으로 사용
-# 저장소 페이지에서 "Use this template" 클릭
+pip install git+https://github.com/rae-hugo-kim/Pixel-Maker.git
 ```
 
-## 구조
+또는 클론 후 로컬 설치:
 
-```
-.
-├── CLAUDE.md            # 메인 에이전트 정책 (진입점)
-├── INDEX.md             # 저장소 탐색 인덱스
-├── EXAMPLES.md          # 원칙별 좋은/나쁜 패턴 예시
-├── rules/               # 에이전트 행동 규칙 정의
-├── checklists/          # 작업 및 리뷰 체크리스트
-├── templates/           # 재사용 가능한 프로젝트 템플릿
-├── claudedocs/          # 보조 문서 (한국어 번역, 부트스트랩 가이드, 합의사항)
-└── .omc/                # oh-my-claudecode 설정
+```bash
+git clone https://github.com/rae-hugo-kim/Pixel-Maker.git
+cd Pixel-Maker
+pip install .
 ```
 
-## 배포 방법
+## CLI 사용법
 
-1. **템플릿으로 사용**: GitHub에서 "Use this template"을 클릭하여 이 구조를 기반으로 새 저장소를 생성합니다.
-2. **기존 프로젝트에 복사**: `CLAUDE.md`와 필요한 디렉토리를 프로젝트 루트에 복사합니다.
-3. **커스터마이즈**: `CLAUDE.md`, 규칙, 체크리스트, 템플릿을 프로젝트에 맞게 수정합니다.
+```bash
+# 기본 — 격자 자동 감지
+pixelmaker extract input.png output.png
 
-Claude Code는 세션 시작 시 프로젝트 루트의 `CLAUDE.md`를 자동으로 읽습니다.
+# 격자 크기 힌트 제공
+pixelmaker extract input.png output.png --grid-size 64
 
-## 핵심 원칙
+# 레퍼런스 이미지로 격자 크기 추론
+pixelmaker extract input.png output.png --ref reference_64x64.png
 
-- **코딩 전에 생각하기** — 가정을 명시적으로 밝히고, 결정 전에 질문하기
-- **단순함 우선** — 요청된 것만 구현하고, 과도한 설계 지양
-- **외과적 변경** — 관련 라인만 수정하고, 기존 스타일 유지
-- **목표 중심 실행** — 모호한 요청을 검증 가능한 목표로 변환
+# 격자 크기 강제 지정 (자동 감지 무시)
+pixelmaker extract input.png output.png --force-grid-size 32
+
+# 출력 이미지 확대 (nearest-neighbor)
+pixelmaker extract input.png output.png --scale 4
+```
+
+### 옵션
+
+| 옵션 | 설명 |
+|------|------|
+| `--grid-size N` | 예상 격자 크기 힌트. 자동 감지 결과와 다르면 에러 발생. |
+| `--ref 경로` | 레퍼런스 이미지의 크기로 격자 크기를 추론. |
+| `--force-grid-size N` | 자동 감지를 무시하고 격자 크기를 강제 지정. |
+| `--scale N` | 출력 이미지를 N배 확대 (nearest-neighbor 보간). |
+
+### 종료 코드
+
+| 코드 | 의미 |
+|------|------|
+| 0 | 성공 |
+| 1 | 에러 (격자 미감지, 힌트 충돌, 파일 미발견 등) |
+
+## MCP 서버 (AI 에이전트용)
+
+PixelMaker를 MCP 도구로 등록하면 Claude가 어떤 프로젝트에서든 호출할 수 있습니다:
+
+```bash
+# MCP 의존성 포함 설치
+pip install "pixelmaker[mcp] @ git+https://github.com/rae-hugo-kim/Pixel-Maker.git"
+
+# Claude Code에 등록
+claude mcp add --scope user pixelmaker -- python -m pixelmaker.mcp_server
+```
+
+등록 후 Claude에게 이렇게 말하면 됩니다:
+
+> "이 이미지에서 픽셀아트 추출해줘" (파일 경로 제공)
+
+Claude가 `extract_pixel_art` 도구를 호출하고, 신뢰도/격자 크기/고유 색상 수 등의 메타데이터를 반환합니다.
+
+## 동작 원리
+
+1. **격자 감지** — 각 행/열의 밝기를 스캔하여 격자선 위치를 찾음 (절대 임계값 + 회색 선용 상대 valley 감지)
+2. **셀 샘플링** — 격자선에서 셀 경계를 계산하고, 중심 7x7 영역의 평균 색상을 샘플링 (JPEG 아티팩트 보정)
+3. **출력** — 원본 색상이 보존된 깨끗한 NxN 픽셀아트 이미지 생성
+
+## 지원 포맷
+
+| 포맷 | 입력 | 출력 |
+|------|------|------|
+| PNG | O | O |
+| JPEG | O | — |
+| BMP | O | — |
+| WebP | O | — |
+| RGBA (투명 배경) | O | — |
+| 그레이스케일 | O | — |
+
+## 요구사항
+
+- Python 3.10+
+- Pillow 10.0+
+
+## 개발 환경
+
+```bash
+git clone https://github.com/rae-hugo-kim/Pixel-Maker.git
+cd Pixel-Maker
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev,mcp]"
+python -m pytest  # 50개 테스트
+```
+
+## 라이선스
+
+저장소의 라이선스 파일을 참고하세요.
