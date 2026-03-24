@@ -1,0 +1,24 @@
+version: 1
+status: draft
+
+goal: >
+  <kickoff 완료 후 실제 목표로 교체>
+
+constraints:
+  - <제약 1>
+
+acceptance_criteria:
+  - <테스트 가능한 AC 1>
+
+out_of_scope:
+  - <비범위 1>
+
+assumptions:
+  - <가정 1>
+
+risks:
+  - <위험 1>
+
+references:
+  - path: docs/harness/kickoff-summary.md
+    reason: kickoff 원본 요약
