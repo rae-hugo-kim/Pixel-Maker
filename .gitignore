@@ -3,3 +3,13 @@
 .claude/*
 !.claude/skills/
 docs/sum/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# OMC state
+.omc/
