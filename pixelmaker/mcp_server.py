@@ -20,12 +20,20 @@ def extract_pixel_art_tool(
     ref_path: str | None = None,
     force_grid_size: int | None = None,
     scale: int | None = None,
+    transparent_color: str | None = None,
+    transparent_bg: bool = False,
 ) -> dict:
     """Extract pixel art from a grid-overlay image.
 
     Returns dict with output_path and metadata, or error dict on failure.
     """
     try:
+        # Parse hex color if provided
+        tc_tuple = None
+        if transparent_color:
+            hex_str = transparent_color.lstrip('#')
+            tc_tuple = (int(hex_str[0:2], 16), int(hex_str[2:4], 16), int(hex_str[4:6], 16))
+
         image = Image.open(input_path)
         image.load()
 
@@ -49,6 +57,8 @@ def extract_pixel_art_tool(
             ref_image=ref_image,
             force_grid_size=force_grid_size,
             scale=scale,
+            transparent_color=tc_tuple,
+            transparent_bg=transparent_bg,
         )
 
         # Save output
@@ -105,11 +115,14 @@ def extract_pixel_art_mcp(
     ref_path: str | None = None,
     force_grid_size: int | None = None,
     scale: int | None = None,
+    transparent_color: str | None = None,
+    transparent_bg: bool = False,
 ) -> str:
     """Extract pixel art from a grid-overlay image."""
     import json
     result = extract_pixel_art_tool(
-        input_path, output_path, grid_size, ref_path, force_grid_size, scale
+        input_path, output_path, grid_size, ref_path, force_grid_size, scale,
+        transparent_color, transparent_bg,
     )
     return json.dumps(result)
 

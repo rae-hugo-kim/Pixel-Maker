@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import Counter
 from PIL import Image, ImageStat
 
 
@@ -28,12 +29,92 @@ def _sample_cell(image: Image.Image, x0: int, x1: int, y0: int, y1: int) -> tupl
     return image.getpixel((cx, cy))
 
 
+def make_transparent(
+    image: Image.Image,
+    color: tuple | None = None,
+    auto: bool = False,
+) -> Image.Image:
+    """Make edge-connected background pixels transparent.
+
+    Args:
+        image: Input image (RGB or RGBA).
+        color: Specific RGB color to treat as background.
+        auto: Auto-detect background from edge pixel majority.
+
+    Returns RGBA image with edge-connected background pixels set to alpha=0.
+    """
+    rgb = image.convert("RGB")
+    w, h = rgb.size
+
+    if auto and color is None:
+        # Collect edge pixels
+        edge_pixels = []
+        for x in range(w):
+            edge_pixels.append(rgb.getpixel((x, 0)))
+            edge_pixels.append(rgb.getpixel((x, h - 1)))
+        for y in range(1, h - 1):
+            edge_pixels.append(rgb.getpixel((0, y)))
+            edge_pixels.append(rgb.getpixel((w - 1, y)))
+
+        if not edge_pixels:
+            return image.convert("RGBA")
+
+        counts = Counter(edge_pixels)
+        most_common_color, most_common_count = counts.most_common(1)[0]
+        # Need >50% of edge pixels to be the same color
+        if most_common_count <= len(edge_pixels) * 0.5:
+            return image.convert("RGBA")
+        color = most_common_color
+
+    if color is None:
+        return image.convert("RGBA")
+
+    # Flood fill from all edge pixels matching `color`
+    rgba = image.convert("RGBA")
+    pixels = rgb.load()
+    visited = [[False] * h for _ in range(w)]
+    queue = []
+
+    # Seed from all 4 edges
+    for x in range(w):
+        for y in [0, h - 1]:
+            if pixels[x, y] == color and not visited[x][y]:
+                visited[x][y] = True
+                queue.append((x, y))
+    for y in range(1, h - 1):
+        for x in [0, w - 1]:
+            if pixels[x, y] == color and not visited[x][y]:
+                visited[x][y] = True
+                queue.append((x, y))
+
+    # BFS flood fill
+    i = 0
+    while i < len(queue):
+        cx, cy = queue[i]
+        i += 1
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+            nx, ny = cx + dx, cy + dy
+            if 0 <= nx < w and 0 <= ny < h and not visited[nx][ny]:
+                if pixels[nx, ny] == color:
+                    visited[nx][ny] = True
+                    queue.append((nx, ny))
+
+    # Set transparent
+    for x, y in queue:
+        r, g, b = pixels[x, y]
+        rgba.putpixel((x, y), (r, g, b, 0))
+
+    return rgba
+
+
 def extract_pixel_art(
     image: Image.Image,
     grid_size: int | None = None,
     ref_image: Image.Image | None = None,
     force_grid_size: int | None = None,
     scale: int | None = None,
+    transparent_color: tuple | None = None,
+    transparent_bg: bool = False,
 ) -> Image.Image:
     """Extract pixel art from grid-overlay image.
 
@@ -67,5 +148,11 @@ def extract_pixel_art(
     # Optional scale
     if scale and scale > 1:
         result = result.resize((cols * scale, rows * scale), Image.NEAREST)
+
+    # Optional transparency
+    if transparent_color is not None:
+        result = make_transparent(result, color=transparent_color)
+    elif transparent_bg:
+        result = make_transparent(result, auto=True)
 
     return result
